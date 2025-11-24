@@ -46,11 +46,6 @@ namespace bppr
             _qStatus = vslSSDeleteTask(&_qTask);
         }
 
-        // TODO: Delete
-        void debugX(const unsigned short six, float(&X)[bpprix::decode<bpprix::kM>(T)]) {
-            _projection.debugX(six, X);
-        }
-
         /**
         * @brief The canonical get for the class, returning either its main feature: the knots matrix itself, 
         *              or acting as a pass-through for Projection, to return the transform matrix 

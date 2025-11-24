@@ -17,17 +17,18 @@ if len(sys.argv) < 3:
 
 bpprfile = join(sys.argv[1], sys.argv[2]+coresuffix)  # Generate a training .bppr file
 updtfile = join(sys.argv[1], sys.argv[2]+updtsuffix)  # Generate an OOS update/prediction .updt file
-N = 256  # Number of core training samples
-M = 3      # Number of signals generated
+N = int(sys.argv[2]) & 0x0000FFFF                # Number of core training samples
+M = (int(sys.argv[2]) & 0x007F0000) >> 16  # Number of signals generated
+
 r = 1        # Number of ridge functions used for initialization
 U = 128  # Number of OOS update samples
 
-nu = [0]                                      # The initial degree of sigmoidized compression / rarefaction
+nu = [0]                                      # The initial degree of sigmoidized compression / rarefaction. Length r
 ctrue = np.array([0.707, 0.866, 0])  # Linear weights generating y
-chat = [0.9285, 0.3714, 0]       # Must be length M. The initial projection direction
-ihat = [0.0, 0.4, 0.8, 1.0, 5.0];  # Must be length M+2. Correponds to weights [2,2,1] for signal indices=[0,1,2] respectively
-ahat = [0.0, 0.33, 1.0, 3.0];      # Must be length A+2. Corresponds to weights [1,2] for nActive=[1,2] respectively
-that = 0.98;                                # The initial regression-hyperparameter tau
+chat = [0.9285, 0.3714, 0]       # Must be length M*r. The initial projection direction
+ihat = [0.0, 0.4, 0.8, 1.0, 5.0]   # Must be length M+2. Correponds to weights [2,2,1] for signal indices=[0,1,2] respectively
+ahat = [0.0, 0.33, 1.0, 3.0]       # Must be length A+2. Corresponds to weights [1,2] for nActive=[1,2] respectively
+that = 0.98                                 # The initial regression-hyperparameter tau
 bias = False                               # Whether an intercept term is added (not implemented)
 stdX = 0.2                                  # The random noise level applied to each signal
 stdY = 0.5                                  # The random noise level applied to the generated time series y. 

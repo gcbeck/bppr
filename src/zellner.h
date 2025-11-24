@@ -13,8 +13,6 @@
 
 #include <algorithm>
 
-#include <iostream>  // DEBUGGING ONLY TODO: Delete
-
 #include "knots.h"
 #include "mkl_lapack.h"
 
@@ -217,7 +215,7 @@ namespace bppr
 
       /**
         * @brief Poterior prediction using the full cache of P bppr samples. 
-        *              Puts the P predictions into vector prsis for access by poterior(), and returns their mean. 
+        *              Puts the P predictions into vector prsis for access by posterior(), and returns their mean. 
         */
         template<pred_t U>
         float predict(MKL_UINT(&rcx)[rcx::N], const float(&X)[bpprix::decode<bpprix::kM>(T)]) {
@@ -294,13 +292,6 @@ namespace bppr
             return reinterpret_cast<float(&)[P]>(_prsis);
         }
 
-        // TODO: Delete
-        void debugX(MKL_UINT(&rcx)[rcx::N], const unsigned short six) {
-            float X[bpprix::decode<bpprix::kM>(T)];
-            _knots.debugX(six, X);
-            std::cout << "Yhat: " << predict<pred::kMean>(rcx, X) << " <-> " << _y[six] << std::endl;
-        }
-
       /**
         * @brief Logs the full projection coefficient vector for ridge ix or all ridge functions
         */
@@ -322,7 +313,7 @@ namespace bppr
       /**
         * @brief Persist state to file. 
         */
-        void write(Proto<T>& proto, MKL_UINT(&rcx)[rcx::N]) {
+        const unsigned short write(Proto<T>& proto, MKL_UINT(&rcx)[rcx::N]) {
             _knots.write(proto, _projesky.k(), rcx);
             const unsigned short p = bpprix::decode<bpprix::kI>(T) ? P : 0;  
             rectify<1, PR*(kD-2)>(reinterpret_cast<float(&)[PR*(kD-2)]>(_cache.second[p]), rcx[rcx::kKHx]-p, rcx[rcx::kKTx]-p);
@@ -333,6 +324,7 @@ namespace bppr
             rcx[rcx::kPx] = 0;
             rcx[rcx::kZTx] = p; rcx[rcx::kZHx] = rcx[rcx::kRKx]+p;
             proto.template set<proto::kZS>(_projesky.k(), _y, _tau, _indexW, _activeW, rcx[rcx::kRx], _cache.first, _cache.second);
+            return _projesky.k();
         }
 
       private:
@@ -937,35 +929,6 @@ namespace bppr
             spotrf(&UPPERTRIANGLE, &kd, upd, &rfpfo.ki, &_outcome);
         }
 
-        // NOTE: Only valid for even k right now. TODO: Delete
-        void dbgchkexp(const MKL_INT k) {
-            std::memset(_dbgfull, 0, RK*RK*sizeof(float));
-            std::memset(_dbgfull2, 0, RK*RK*sizeof(float));
-            ssyrk(&LOWERTRIANGLE, &TRANSPOSED, &k, &N, &ONEf, _basis, &N, &ZEROf, _dbgfull, &k); 
-            spotrf(&LOWERTRIANGLE, &k, _dbgfull, &k, &_outcome);
- 
-            stfttr(&UNTRANSPOSED, &LOWERTRIANGLE, &k, _basesky.template get<factor::kProposal>(), _dbgfull2, &k, &_outcome);
-            for (unsigned short ix = 0; ix < k; ++ix) {
-                for (unsigned short jx = 0; jx < k; ++jx) {
-                    if (std::abs(_dbgfull[ix + jx*k] - _dbgfull2[ix + jx*k]) > 1e-1) {
-                        std::cout << "DEBUG: proposal[" << ix << "][" << jx << "] = " << _dbgfull2[ix + jx*k] << " <-> fullEmulation = " << _dbgfull[ix + jx*k] << std::endl;
-                    }
-                }
-            }
-        }
-
-        // TODO: Delete
-        template<unsigned short M>
-        void dbgprintrfpfeven(const unsigned int k, const float(&rfpf)[M]) {
-            for (int ix = 0; ix < k+1; ++ix) {
-                for (int jx = 0; jx < k/2; ++jx) {
-                    std::cout << rfpf[jx*(k+1) + ix] << '\t';
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
-        }
-
       /**
         * @brief Update the proposal cholesky matrix with a removed ridge function.
         */
@@ -1044,72 +1007,6 @@ namespace bppr
                         scopy(&nix, rfpfi.up+rfpfi.ki*(ex-rfpfi.m1+K)+eix-rfpfi.m1, &rfpfi.ki, _working+ex, &SINGLESTEP);
                     }
                     update<update::kRankOne>(f, reinterpret_cast<float(&)[Factor<F>::kM]>(_working), ONEf, ONEf, ex);
-                }
-            }
-        }
-
-        // TODO: Delete
-        void dbgchkcnt(const unsigned short ex) {
-            float dbgb[N*RK];
-            std::memset(_dbgfull, 0, RK*RK*sizeof(float));
-            std::memset(_dbgfull2, 0, RK*RK*sizeof(float));
-            std::memset(dbgb, 0, sizeof(dbgb));
-            unsigned short eix = 0;
-            for (eix = 0; eix < ex; ++eix) {
-                std::memcpy(dbgb+eix*N, _basis+eix*N, N*sizeof(float));
-            }
-            for (eix = ex+(kD-2); eix < _basesky.k(); ++eix) {
-                std::memcpy(dbgb+(eix-kD+2)*N, _basis+eix*N, N*sizeof(float));
-            }
-    
-            const MKL_INT ck = _basesky.k()-kD+2;
-            ssyrk(&LOWERTRIANGLE, &TRANSPOSED, &ck, &N, &ONEf, dbgb, &N, &ZEROf, _dbgfull, &ck); 
-            spotrf(&LOWERTRIANGLE, &ck, _dbgfull, &ck, &_outcome);
-
-            stfttr(&UNTRANSPOSED, &LOWERTRIANGLE, &ck, _basesky.template get<factor::kProposal>(), _dbgfull2, &ck, &_outcome);
-            for (unsigned short ix = 0; ix < ck; ++ix) {
-                for (unsigned short jx = 0; jx < ck; ++jx) {
-                    if (std::abs(_dbgfull[ix + jx*ck] - _dbgfull2[ix + jx*ck]) > 1e-1) {
-                        std::cout << "DEBUG: proposal[" << ix << "][" << jx << "] = " << _dbgfull2[ix + jx*ck] << " <-> fullEmulation = " << _dbgfull[ix + jx*ck] << std::endl;
-                    }
-                }
-            }
-        }
-
-        // TODO: Delete
-        void dbgchkmod(const MKL_INT k, const unsigned short r) {
-            float dbgb[N*RK];
-            std::memset(_dbgfull, 0, RK*RK*sizeof(float));
-            std::memset(_dbgfull2, 0, RK*RK*sizeof(float));
-            std::memset(dbgb, 0, sizeof(dbgb));
-            std::memcpy(dbgb, _basis, N*k*sizeof(float));
-            std::memcpy(dbgb+N*r, _basis+N*k, N*(kD-2)*sizeof(float));
-
-            ssyrk(&LOWERTRIANGLE, &TRANSPOSED, &k, &N, &ONEf, dbgb, &N, &ZEROf, _dbgfull, &k);  
-            spotrf(&LOWERTRIANGLE, &k, _dbgfull, &k, &_outcome);
-            if (_outcome > 0) {
-                float dbgv[N];
-                std::memcpy(dbgv, dbgb+N*(_outcome-1), N*sizeof(float));
-                std::cout << "DEBUG: Bad Eigval " << _outcome << ", absdiffs: [ ";
-
-                float dbgd[_outcome];
-                for (unsigned short ix = 0; ix < _outcome; ++ix) {
-                    dbgd[ix] = 0;
-                    for (unsigned short jx = 0; jx < N; ++jx) {
-                        dbgd[ix] += std::abs(dbgb[N*ix+jx] - dbgv[jx]);
-                    }
-                    std::cout << dbgd[ix] << ", ";
-                }
-                std::cout << " ]" << std::endl;
-            }
-            stfttr(&UNTRANSPOSED, &LOWERTRIANGLE, &k, _basesky.template get<factor::kProposal>(), _dbgfull2, &k, &_outcome);
-
-            for (unsigned short ix = 0; ix < k; ++ix) {
-                for (unsigned short jx = 0; jx < k; ++jx) {
-                    const auto dbgerr = std::abs(_dbgfull[ix + jx*k] - _dbgfull2[ix + jx*k]);
-                    if (dbgerr > 1e-1) {
-                        std::cout << "DEBUG: proposal[" << ix << "][" << jx << "] = " << _dbgfull2[ix + jx*k] << " <-> fullEmulation = " << _dbgfull[ix + jx*k] << std::endl;
-                    }
                 }
             }
         }
@@ -1213,10 +1110,6 @@ namespace bppr
             }
 
             expandrfpf<kD-2, update::kFull>(_basesky);
-             // DEBUGGING TODO: Delete clause
-            if  ((_basesky.k()+kD) % 2 == 0) {
-                dbgchkexp(_basesky.k() + (kD-2));
-            } // END DEBUGGING
             float pse = beta<action::kBirth>();
             if (pse < _tau*_ssy) {
                 _mh[mhix::kProposal] = getMH<mhix::kSpageiria>(_projesky.k()+1);  
@@ -1287,10 +1180,6 @@ namespace bppr
 
             const MKL_INT ex = dix*(kD-2)+bpprix::decode<bpprix::kI>(T);
             contractrfpf<kD-2, update::kFull>(_basesky, ex);
-            // DEBUGGING TODO: Delete clause
-            if  ((_basesky.k()-(kD-2)) % 2 == 0) {
-                dbgchkcnt(dix*(kD-2)+bpprix::decode<bpprix::kI>(T));
-            } // END DEBUGGING
             bool execd = false;
             float pse = beta<action::kDeath>(ex);
             if (pse < _tau*_ssy) {
@@ -1368,12 +1257,6 @@ namespace bppr
 
             const MKL_INT r = rix*(kD-2)+bpprix::decode<bpprix::kI>(T);
             modifyrfpf<kD-2, update::kFull>(_basesky, r);
-            // DEBUGGING TODO: Delete clause
-            const MKL_INT dbgk = _projesky.k()*(kD-2)+bpprix::decode<bpprix::kI>(T);
-            if (dbgk % 2 == 0) {
-                dbgchkmod(_projesky.k()*(kD-2)+bpprix::decode<bpprix::kI>(T), r);
-            } // END DEBUGGING
-
             float pse = beta<action::kChange>(r);
             if (pse < _tau*_ssy) {
                 pse = _ssy - pse;
@@ -1506,10 +1389,6 @@ namespace bppr
         float _pmu[bpprix::decode<bpprix::kA>(T)];
         float _mh[mhix::N];
         MKL_INT _outcome;
-
-        float _dbg[(RK * (RK + 1)) / 2];  // TODO: Delete clause
-        float _dbgfull[RK*RK];
-        float _dbgfull2[RK*RK];
     };
 
  } // namespace bppr

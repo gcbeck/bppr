@@ -206,9 +206,6 @@
             return false;
         }
 
-        // TODO: Delete
-        void debugX(const unsigned short six, float(&X)[bpprix::decode<bpprix::kM>(T)]) { scopy(&M, _X+six, &N, X, &SINGLESTEP);}
-
       /**
         * @brief Persist state to file. 
         */

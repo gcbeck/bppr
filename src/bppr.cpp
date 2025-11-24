@@ -13,8 +13,8 @@
  */
 #include "bppr.h"
 
+#include <iostream>
 #include <stdexcept>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sstream> 
 #include <string>
@@ -26,7 +26,7 @@
 #include "mkl_vml_defines.h"
 #include "mkl_vml_functions.h"
 
-constexpr auto REPO = join("..", bppr::PATHSEP, "dat", bppr::PATHSEP);
+constexpr auto REPO = join(".", bppr::PATHSEP, "dat", bppr::PATHSEP);
 constexpr auto T = bppr::bpprix::encode(256, 3, 8, 2, 4, 16, false);
 
 constexpr char OPTS[] = "e:t:d:w";

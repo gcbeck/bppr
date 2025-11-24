@@ -61,11 +61,7 @@ namespace bppr
                     _zs.template mcmc<kBurn>(_rcx); 
                 }
             }
-
             _zs.coefs();  // Log the direction coefficients over all ridge functions
-            for (unsigned short ix = 0; ix < bpprix::decode<bpprix::kN>(T); ix+=16) { // DEBUGGING TODO: Delete
-                _zs.debugX(_rcx, ix);
-            }
         }
 
       /**
@@ -98,6 +94,7 @@ namespace bppr
                 update(X, y);
             }
             _proto.close();
+            _zs.coefs();  // Log the direction coefficients over all ridge functions
         }
 
       /**
@@ -139,8 +136,8 @@ namespace bppr
         template<size_t M>
         void write(const std::array<char, M>& to) {
             _proto.open(to);
-            _zs.write(_proto, _rcx);
-            _proto.template set<proto::kCache>(_rcx);
+            const unsigned short nRidge = _zs.write(_proto, _rcx);
+            _proto.template set<proto::kCache>(nRidge, _rcx);
             _proto.close();
         }
 

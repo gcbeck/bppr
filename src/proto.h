@@ -336,13 +336,10 @@ namespace bppr
                 p._from.read(reinterpret_cast<char*>(rcx), rcx::N*sizeof(MKL_UINT));
                 return true;
             }
-            static void set(Proto<T>& p, const MKL_UINT(&rcx)[rcx::N]) {
-                unsigned short nRidge;
-                if (io<proto::kNRidge>::get(p, nRidge)) {
-                    const proto_t cOffset = offset<proto::kCache>(nRidge, rcx[rcx::kRx]);
-                    p._from.seekp(cOffset, std::ios::beg);
-                    p._from.write(reinterpret_cast<const char*>(rcx), rcx::N*sizeof(MKL_UINT));
-                }
+            static void set(Proto<T>& p, const unsigned short& nRidge, const MKL_UINT(&rcx)[rcx::N]) {
+                const proto_t cOffset = offset<proto::kCache>(nRidge, static_cast<unsigned short>(rcx[rcx::kRx]));
+                p._from.seekp(cOffset, std::ios::beg);
+                p._from.write(reinterpret_cast<const char*>(rcx), rcx::N*sizeof(MKL_UINT));
             }
         };
 
