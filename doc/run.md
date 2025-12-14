@@ -18,7 +18,7 @@ You retrieve the *encoding* by concatenating these parameters, in that order, as
 
 ------
 
-Armed with the encoding, write a binary file `<encoding>.bppr` that observes the BPPR persistence protocol encapsulating both your training set and a guess at an initial BPPR state. Follow the `bpprfile` parts of [this synthetic data example](./tst/TestData.py) closely to get started. If you have no particular priors on how you want your initial state influenced, just work from
+Armed with the encoding, write a binary file `<encoding>.bppr` that observes the BPPR persistence protocol encapsulating both your training set and a guess at an initial BPPR state. Follow the `bpprfile` parts of [this synthetic data example](../tst/TestData.py) closely to get started. If you have no particular priors on how you want your initial state influenced, just work from
 ```
 r = 1
 nu = [0] 
@@ -31,7 +31,7 @@ Figure out how to insert your training data `(X,y)` in there and you'll be away.
 
 ------
 
-Finally, check the data path `constexpr auto REPO` and the encoding `constexpr auto T` in [bppr.cpp](./src/bppr.cpp) that they match where you've generated the `.bppr` file and your encoding respectively. Compile and run, concatenating the desired number of MCMC iterations you want in the Burn and Adapt phases, and the period for posterior caching; for example:
+Finally, check the data path `constexpr auto REPO` and the encoding `constexpr auto T` in [bppr.cpp](../src/bppr.cpp) that they match where you've generated the `.bppr` file and your encoding respectively. Compile and run, concatenating the desired number of MCMC iterations you want in the Burn and Adapt phases, and the period for posterior caching; for example:
 ```
 ./bppr -d 256,16,4
 ```
@@ -39,7 +39,7 @@ Adding argument `-w` will write the updated BPPR state to your data directory, a
 
 ------
 
-BPPR is most useful as a library, integrated into external code that calls `predict` and `update` functions. However for demonstration purposes and perhaps some utility, [the executable](./src/bppr.cpp) will pull in out-of-sample data from an `.updt` file and process the samples successively as if performing the updates online.  
+BPPR is most useful as a library, integrated into external code that calls `predict` and `update` functions. However for demonstration purposes and perhaps some utility, [the executable](../src/bppr.cpp) will pull in out-of-sample data from an `.updt` file and process the samples successively as if performing the updates online.  
 
 ------
 
